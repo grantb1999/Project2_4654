@@ -33,3 +33,4 @@ summary(cars)
 plot(pressure)
 ```
 
+summary(cars)
