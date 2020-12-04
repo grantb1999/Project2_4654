@@ -149,7 +149,6 @@ D.perc <- D / sum(D) * 100
 plot(
   D.perc,
   xaxt = "n",
-  yaxt = "n",
   pch = 16,
   cex = 1.5,
   type = "b",
@@ -157,14 +156,13 @@ plot(
   ylab = "%"
 )
 axis(side=1, at=c(1:n))
-axis(side=2, at=c(0, round(D.perc, 1)))
 ```
 
 The first eigenvector captures nearly 33\% of variance, while the tenth eigenvector contributes nearly nothing, implying that it is nearly a linear combination of other vectors.
 
 ## Dimension Reduction
 \footnotesize
-If we cumulatively sum this vector of percentage contributions. using only the first five eigenvectors, we capture 89\% of variance. Using the first seven eigenvectors, we capture 98\% of the variance.
+If we cumulatively sum this vector of percentage contributions. using only the first five eigenvectors, we capture 89\% of variance. Using the first six eigenvectors, we capture 96\% of the variance. After that, the contributions taper off. Six eigenvectors is then a good number to include in our regression.
 
 ```{r, fig.height=6}
 plot(
@@ -178,7 +176,7 @@ plot(
   yaxt = "n"
 )
 axis(side=1, at=c(1:n))
-axis(side=2, at=round(cumsum(D.perc))[c(1:5,7)], lwd.ticks=.5)
+axis(side=2, at=round(cumsum(D.perc))[c(1:6)], lwd.ticks=.5)
 ```
 
 
