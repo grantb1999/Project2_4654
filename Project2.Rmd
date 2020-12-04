@@ -1,36 +1,104 @@
 ---
-title: "Project 2"
-author: "Grant Bailey"
+title: "Principal Component Regression"
+author: "Grant Bailey, Lizhou Wang, Andrew Li"
 date: "12/3/2020"
 output: beamer_presentation
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
+library(scales)
 ```
 
-## R Markdown
 
-This is an R Markdown presentation. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+# Mathematical Theory
+## Introduction
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document.
+\small
 
-## Slide with Bullets
-
-- Bullet 1
-- Bullet 2
-- Bullet 3
-
-## Slide with R Output
-
-```{r cars, echo = TRUE}
-summary(cars)
+Let's look at some random data. Here we linearly regress $y$ against $x$. I've added red lines to show the two directions we have our normally distributed random data going.
+\tiny
+```{r, echo=TRUE}
+set.seed(0)
+x <- rnorm(1000, 0, 3)
+y <- rnorm(1000, 0, 1)
+mod <- lm(y ~ x)
 ```
 
-## Slide with Plot
-
-```{r pressure}
-plot(pressure)
+```{r, fig.width=10, fig.height=5}
+A <- cbind(x,y)
+plot(
+  A[, 2] ~ A[, 1],
+  xlim = c(-10, 10),
+  ylim = c(-10, 10),
+  pch = 16,
+  col = alpha("black", .5),
+  xlab = "x",
+  ylab = "y"
+)
+mod <- lm(A[,2] ~ A[,1])
+lines(mod$fitted.values ~ A[,1], col="blue", lwd=3)
+segments(-7, 0, 7, 0, col="red", lwd=3)
+segments(0, 3, 0, -3, col="red", lwd=3)
 ```
 
-summary(cars)
+```{r, echo=FALSE}
+summary(mod)$coefficients
+```
+
+## Rotation
+\small
+
+Now let's rotate the data and the lines, and fit another regression model with our new dimensions.
+\tiny
+\begin{align*}
+  A &= 
+    \begin{bmatrix}
+    \vec{x} & \vec{y} \\
+    \end{bmatrix} \\
+  \theta &= \frac{-\pi}{3} \\
+  R &=
+    \begin{bmatrix}
+    cos(\theta) & -sin(\theta) \\
+    sin(\theta) & cos(\theta) 
+    \end{bmatrix} \\
+  B &= AR
+\end{align*}
+
+```{r, fig.width=10, fig.height=5}
+A <- cbind(x,y)
+th <- -pi/3
+R <- matrix(c(cos(th), sin(th), -sin(th), cos(th)), ncol=2)
+B <- A %*% R
+plot(B[,2] ~ B[,1], xlim = c(-10, 10), ylim=c(-10,10), pch=16, col=alpha("black", .5))
+mod <- lm(B[,2] ~ B[,1])
+lines(mod$fitted.values ~ B[,1], col="blue", lwd=3, xlab="x", ylab="y")
+
+c <- matrix(c(-7, 0, 7, 0), byrow = T, ncol=2) %*% R
+d <- matrix(c(0, -3, 0, 3), byrow = T, ncol=2) %*% R
+segments(c[1,1], c[1,2], c[2,1], c[2,2], col="red", lwd=3)
+segments(d[1,1], d[1,2], d[2,1], d[2,2], col="red", lwd=3)
+```
+
+## Principal Components
+\small
+Principal components are directions that maximize variance in a matrix. They can also be seen as "axes" for the matrix, which is apparent in the previous plot. Principal components are, then, the same as eigenvectors. Here are the eigenvectors of our matrix $B$ scaled and drawn on our plot.
+
+\tiny
+
+```{r, fig.height=6}
+e <- eigen(t(B) %*% B)
+v <- e$vectors
+plot(B[,2] ~ B[,1], xlim = c(-10, 10), ylim=c(-10,10), pch=16, col=alpha("black", .5))
+segments(c[1,1], c[1,2], c[2,1], c[2,2], col="red", lwd=3)
+segments(d[1,1], d[1,2], d[2,1], d[2,2], col="red", lwd=3)
+arrows(0, 0, x1 = v[1,1]*6, y1 = v[2,1]*6, length = .2, col="deepskyblue", lwd=5)
+arrows(0, 0, x1 = v[1,2]*2, y1 = v[2,2]*2, length = .2, col="deepskyblue", lwd=5)
+```
+
+
+
+
+
+
+
