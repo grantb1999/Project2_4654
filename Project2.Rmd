@@ -6,10 +6,22 @@ output: beamer_presentation
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(echo = FALSE, 
+                      comment = NA, # Required
+                      fig.path = "./figures/",
+                      fig.width = 10,
+                      fig.height = 5,
+                      message = FALSE, # Turn off load messages
+                      warning = FALSE # Turn off warnings
+                      )
 library(scales)
+library(dplyr)
+library(ggplot2)
+library(GGally)
+library(corrplot)
+library(MASS)
+library(clusterSim)
 ```
-
 
 # Mathematical Theory
 ## Introduction
@@ -96,6 +108,78 @@ arrows(0, 0, x1 = v[1,1]*6, y1 = v[2,1]*6, length = .2, col="deepskyblue", lwd=5
 arrows(0, 0, x1 = v[1,2]*2, y1 = v[2,2]*2, length = .2, col="deepskyblue", lwd=5)
 ```
 
+## Mathematical Steps
+\small
+Linear regression is denoted by the formula $y = X \beta + \epsilon$.
+
+Here are the steps to use our principal components for regression:
+
+1. Normalize both our $X$ and our $y$
+2. Obtain singular values and eigenvectors for $X$, where $D$ denotes a diagonal matrix with eigenvalues ordered from greatest to least, and $V$ denotes a matrix with eigenvectors for columns.
+3. Reduce the number of columns in $V$ based on the eigenvalues.
+4. Let $n$ be the total number of columns, $p$ be the initial number of eigenvalues, and $r$ be the chosen number of eigenvectors to retain. Calculate $Z_{n \times r} = X_{n \times p}V_{p \times r}$
+5. Calculate $\beta_Z = (Z^\intercal Z)^{-1} Z^\intercal y$
+6. Calculate $\hat{y} = Z \beta_{Z} = X \beta_{X}$, where $\beta_X=V\beta_Z$
+
+
+## Dimension reduction
+\small
+One major benefit of principal component regression is its ability to reduce the dimensions of our predictor matrix while retaining as much information as possible, which aids in reducing collinearity. Here are the eigenvalues of a randomly generated $10 \times 10$ matrix.
+
+```{r}
+n <- 10
+set.seed(0)
+A <- rnorm(n)
+for (i in (2:n)) {
+  A <- cbind(A, rnorm(n))
+}
+A <- data.Normalization(A, "n12") # Centers and normalizes columns of A
+A.eig <- eigen(t(A) %*% A)
+D <- A.eig$values
+V <- A.eig$vectors
+plot(D, xaxt = "n", pch=16, cex=1.5, type="b", main = "Eigenvalues of A", ylab = expression(lambda))
+axis(side=1, at=c(1:n))
+```
+
+## Dimension Reduction
+\footnotesize
+These eigenvalues reveal how much each eigenvector contributes to the total variance of the matrix. If $\vec{\lambda}$ is the vector of eigenvalues, then $\frac{100}{\sum{\vec{\lambda}}} \vec{\lambda}$ tells us what percentage of the variance is explained by each eigenvalue.
+```{r}
+D.perc <- D / sum(D) * 100
+plot(
+  D.perc,
+  xaxt = "n",
+  yaxt = "n",
+  pch = 16,
+  cex = 1.5,
+  type = "b",
+  main = "",
+  ylab = "%"
+)
+axis(side=1, at=c(1:n))
+axis(side=2, at=c(0, round(D.perc, 1)))
+```
+
+The first eigenvector captures nearly 33\% of variance, while the tenth eigenvector contributes nearly nothing, implying that it is nearly a linear combination of other vectors.
+
+## Dimension Reduction
+\footnotesize
+If we cumulatively sum this vector of percentage contributions. using only the first five eigenvectors, we capture 89\% of variance. Using the first seven eigenvectors, we capture 98\% of the variance.
+
+```{r, fig.height=6}
+plot(
+  cumsum(D.perc),
+  pch = 16,
+  cex = 1.5,
+  type = "b",
+  main = "Cumulative Percent of Variance Explained by Eigenvalues",
+  ylab = "Cumulative %",
+  xaxt = "n",
+  yaxt = "n"
+)
+axis(side=1, at=c(1:n))
+axis(side=2, at=round(cumsum(D.perc))[c(1:5,7)], lwd.ticks=.5)
+```
 
 
 
