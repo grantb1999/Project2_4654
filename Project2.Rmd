@@ -152,17 +152,17 @@ plot(
   pch = 16,
   cex = 1.5,
   type = "b",
-  main = "",
+  main = " ",
   ylab = "%"
 )
 axis(side=1, at=c(1:n))
 ```
 
-The first eigenvector captures nearly 33\% of variance, while the tenth eigenvector contributes nearly nothing, implying that it is nearly a linear combination of other vectors.
+The first eigenvector captures nearly 33\% of variance, while the tenth eigenvector contributes nearly nothing, implying that it is nearly a linear combination of other vectors. There is a steep drop-off after our sixth eigenvalue, so six eigenvectors might be a good choice for our regression.
 
 ## Dimension Reduction
 \footnotesize
-If we cumulatively sum this vector of percentage contributions. using only the first five eigenvectors, we capture 89\% of variance. Using the first six eigenvectors, we capture 96\% of the variance. After that, the contributions taper off. Six eigenvectors is then a good number to include in our regression.
+If we cumulatively sum this vector of percentage contributions. using only the first five eigenvectors, we capture 89\% of variance. Using the first six eigenvectors, we capture 96\% of the variance. After that, the contributions taper off.
 
 ```{r, fig.height=6}
 plot(
@@ -179,7 +179,7 @@ axis(side=1, at=c(1:n))
 axis(side=2, at=round(cumsum(D.perc))[c(1:6)], lwd.ticks=.5)
 ```
 
-
+# Examples
 
 
 
