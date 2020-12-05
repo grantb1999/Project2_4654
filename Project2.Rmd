@@ -183,4 +183,81 @@ axis(side=2, at=round(cumsum(D.perc))[c(1:6)], lwd.ticks=.5)
 
 
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
 
+\footnotesize
+I will show you how PCA works by using dataset about IMDb movies
+```{r cars, echo = TRUE}
+data<-read.csv("D:/VT Files/IMDb movies.csv")
+head(data)
+```
+
+here I will extract columns of movie duration, average vote, metascore for each movie, reviews from users and reviews from critics and combine them to a new dataframe
+
+```{r pressure}
+newdata<-data.frame(data$duration,
+                    data$avg_vote,
+                    data$metascore,
+                    data$reviews_from_users,
+                    data$reviews_from_critics)
+## since our dataset has bunch of NAs, it is necessary to clean them.                    
+newdata<-na.omit(newdata)
+## here, I will divide them into 2 groups by their metascore.
+newdata$Group<-ifelse(newdata$data.metascore >=70, "good", "bad")
+```
+
+first we need to find a covariane matrix 
+```{r}
+CovM<-cov(newdata)
+CovM
+```
+calculating eigenvalues and eigenvectors corresponding to CovM
+```{r}
+eigen<-eigen(CovM)
+eigen
+```
+The eigenvectors here are the principal components of CovM. Those eigenvalues will be used for calculating the proportion of the total variance explained by components
+```{r}
+eigen$values/sum(eigen$values)
+plot(eigen$values, xlab = 'eigenvalue', ylab = 'eigenvalue quantity')
+lines(eigen$values)
+
+```
+according to the plot and proportion result, we can consider the first two component as:
+
+z1 = -0.0135146061 * y1 - 0.022811378 * y2 + 0.909097063 * y3 + 0.415660387 * y4 + 0.0081221239 * y5
+
+z2 = -0.0006123869 * y1 - 0.002344616 * y2 + 0.021563961 * y3 - 0.027783304 * y4 - 0.9993784125 * y5
+
+
+
+Above is how PCA works step by step. However, this is time cosuming and we really want to find an easier way to do the whole thing.
+
+# another way
+Fortunately we have princomp, a build-in function that takes over everything I did before
+```{r}
+newdata.pca<-prcomp(newdata)
+newdata.pca
+```
+Hence, prcomp function uses singular value decomposition method of data matrix not eigenvalue on covariance matrix. This is actually a preferred method for accuracy.
+
+# plot of PCA
+In many cases we use scatter plot to draw the first two principal components. By doing so we can reveal departures from normality and non-linearity
+
+```{r}
+library(ggfortify)
+pcaPlot<-autoplot(newdata.pca, data=newdata, colour = 'Group')
+pcaPlot
+```
+# interpreting principal components
+How to interpreting principal components is still a topics that is widely studied in statitics. In most cases components can be interpreted while others can not
+
+By computing corrolations between each PC and variables, we can explain PCs by showing how they corrolated with variables.
+
+```{r}
+cor(pcaPlot$data[,c(3:7)],pcaPlot$data[,c(1,2,9)])
+```
+Reviews from users and reviews from critics shows great nagative corrolation with the first component
+This component is most corrolated with reviews from users by -0.9993. We could say the first component is primarily a measure of reviews_from_users
