@@ -23,6 +23,8 @@ library(corrplot)
 library(MASS)
 library(clusterSim)
 library(pls)
+library(knitr)
+library(car)
 ```
 
 # Mathematical Theory
@@ -181,91 +183,271 @@ axis(side=1, at=c(1:n))
 axis(side=2, at=round(cumsum(D.perc))[c(1:6)], lwd.ticks=.5)
 ```
 
-# Examples
+# Example 1
 
 ## IMDb Data
 \small
-Let's now use principal component analysis 
-```{r}
+Let's now use principal component analysis to forecast IMDB user reviews for movies.
+
+\scriptsize
+```{r, echo=TRUE}
 data <- read.csv("IMDb movies.csv")
-head(data)
+names(data)
 ```
 
+\scriptsize
+Here we have data from the online movie database service IMDb.. We are using this dataset because we can expect a high degree of collinearity between variables such as `metascore` and `reviews_from_critics`, though this is not always the case.
 
-## Next slide
+## Preparing our data
 \small
-Extract columns of movie duration, average vote, metascore for each movie, reviews from users and reviews from critics and combine them to a new dataframe
+First we need to select the proper variables for this type of analysis. Since principal component regression examines the eigenvalues of a matrix, we'll stick with numerical data types. Principal component regression can be done with categorical variables, but we're sticking with the basics here.
 
-```{r pressure}
-my_data<-data.frame(data$duration,data$avg_vote,data$metascore,data$reviews_from_users,data$reviews_from_critics)
-my_data<-na.omit(my_data)
-names(my_data)[1]<-"duration"
-names(my_data)[2]<-"avg_vote"
-names(my_data)[3]<-"metascore"
-names(my_data)[4]<-"reviews_from_users"
-names(my_data)[5]<-"reviews_from_critics"
-dim(my_data)
-```
-We will consider metascore as dependent variable
-
-
-
-
-normalized data before we get to PCR 
-```{r}
-my_data<-data.Normalization(my_data, type="n1", normalization = "column")
+\tiny
+```{r, echo=TRUE}
+revised_data <- data[substr(data$budget, 1, 1) == "$", ]
+revised_data$budget <-
+  substr(revised_data$budget, 2, stop = 1000) %>% as.numeric
+my_data <-
+  revised_data[sapply(revised_data, class) %in% c("numeric", "integer")] %>%
+  na.omit %>%
+  .[c(6, 1:5, 7)] # Reorder our dataframe to put metascore at the front
+summary(my_data)
 ```
 
-compute PCA for my_data
-```{r}
-my_data.pca<-prcomp(my_data, center = TRUE, scale. = TRUE)
+## Preparing our data
+\small
+And now we normalize our data columns using the two-norm and center it so that $\mu=0$. 
 
-## principle component
-
-head(my_data.pca$x)
-```
-extract principle component from our pca output and use them to do principle component regression
-
-```{r}
-metascore<-my_data$metascore
-pc<-data.frame(my_data.pca$x)
-pcr_dataset<-cbind(metascore,pc)
-head(pcr_dataset)
-mod<-lm(metascore~., data = pcr_dataset)
-summary(mod)
-```
-return estimate of coefficients from mod output and calculate beta x
-```{r}
-betaZ<-as.matrix(mod$coeff[2:6])
-v<-as.matrix(my_data.pca$rotation)
-betaX<-v%*%betaZ
-betaX
+\scriptsize
+```{r, echo=TRUE}
+my_data <- my_data %>%
+  data.Normalization(type = "n12", normalization = "column")
+sapply(my_data, norm, "2")
+sapply(my_data, mean) %>% round(5)
 ```
 
+\small
+Our data is now scaled and centered, making it ready for principal component regression. Note that we will get differently scaled eigenvalues when we use a different scaling algorithm, but our final results will be the same.
 
-Also, in R there is a package called pls that provide function pcr that can directly give us the model we want. However, we still need to normalize our data in the first place
-
-
-
-divide the dataset into test set and training set
+## Principal Components
+\tiny
 ```{r}
-smp_size <- floor(0.80 * nrow(my_data))
-
-## set the seed 
-set.seed(123)
-train_ind <- sample(seq_len(nrow(my_data)), size = smp_size)
-
-train <- my_data[train_ind, ]
-test <- my_data[-train_ind, ]
-dim(test)
-dim(train)
+data.X <- my_data[2:7] %>% as.matrix
+data.eig <- eigen(t(data.X) %*% data.X)
+data.D <- data.eig$values
+n <- length(data.D)
+plot(
+  data.D,
+  xaxt = "n",
+  pch = 16,
+  cex = 1.5,
+  type = "b",
+  ylab = expression(lambda),
+  xlab = ""
+)
+axis(side=1, at=c(1:n))
 ```
 
 ```{r}
-pcr_model<-pcr(metascore~., data = train, scale = TRUE, validation = "CV")
-summary(pcr_model)
+data.D.perc <- data.D / sum(data.D) * 100
+plot(
+  cumsum(data.D.perc),
+  pch = 16,
+  cex = 1.5,
+  type = "b",
+  ylab = "Cumulative %",
+  xaxt = "n",
+  yaxt = "n",
+  xlab = "Principal Component"
+)
+axis(side=1, at=c(1:n))
+axis(side=2, at=round(cumsum(data.D.perc))[c(1:(n-1))], lwd.ticks=.5)
 ```
 
+## Full PC Rank Regression
+\footnotesize
+Let's calculate a regression using all the principal components.
+
+\tiny
+```{r, echo=T}
+data.V <- data.eig$vectors
+data.Z <- data.X %*% data.V
+data.Y <- my_data[1] %>% as.matrix # Normalized and scaled metascore
+data.model1.z <- lm(data.Y ~ data.Z)
+```
+
+```{r}
+summary(data.model1.z)
+```
+
+\footnotesize
+In this model, all our principal components are significant, and our $R^2=0.5946$.
+
+## Reduced Principal Components
+\footnotesize
+Now, let's compare this to our model if we use five principal components, accounting for about $96\%$ of our matrix's variance. We set our $V$ to just the first five eigenvectors (principal components), then repeat the above steps.
+
+\tiny
+```{r, echo=T}
+data.V <- data.eig$vectors[,1:5]
+```
+
+```{r}
+data.Z <- data.X %*% data.V
+data.model2.z <- lm(data.Y ~ data.Z)
+summary(data.model2.z)
+```
+
+
+\footnotesize
+Again, all of our principal components are significant, and our $R^2=0.5889$. Although we've removed predictor variable that was considered significant, the two models have very similar $R^2$ values. 
+
+## Further Reducing Principal Components
+\footnotesize
+Now, let's create a model using four principal components, accounting for $90\%$ of the variance in our data. We set our $V$ to just the first four eigenvectors, then repeat the above steps.
+
+\tiny
+```{r, echo=T}
+data.V <- data.eig$vectors[,1:4]
+```
+
+```{r}
+data.Z <- data.X %*% data.V
+data.model3.z <- lm(data.Y ~ data.Z)
+summary(data.model3.z)
+```
+
+\footnotesize
+With just four principal components, we get $R^2=0.5882$, compared to $R^2=0.5889$ for five principal components and $R^2=0.5946$ for all six.
+
+
+## Too Few Principal Components
+\footnotesize
+Now, let's create a model using three principal components, accounting for $83\%$ of the variance in our data. We set our $V$ to just the first three eigenvectors, then repeat the above steps.
+
+\tiny
+```{r, echo=T}
+data.V <- data.eig$vectors[,1:3]
+```
+
+```{r}
+data.Z <- data.X %*% data.V
+data.model4.z <- lm(data.Y ~ data.Z)
+summary(data.model4.z)
+```
+
+\footnotesize
+With three principal components, we get $R^2=0.5423$.
+
+
+## Compare to Ordinary Least-Squares Regression
+\footnotesize
+Let's compare our models to an ordinary least-squares regression model.
+
+\tiny
+```{r, echo=T}
+data.ols1 <- lm(reviews_from_users ~ ., data=my_data)
+summary(data.ols1)
+```
+
+\footnotesize
+With only six predictor columns, it is no surprise that all of them are significant. Notice that our $R^2$ of $0.5946$ is the same value as our full PC rank model.
+
+## Reducing Predictors of our OLS
+\footnotesize
+Say we want to reduce the number of predictor variables in our regression. Since our data is scaled, we can see the contribution of our points by their $\beta$ value.
+
+```{r}
+temp.frame <- round(data.ols1$coefficients[order(abs(data.ols1$coefficients))], 4) %>%
+  as.data.frame
+colnames(temp.frame) <- expression(beta)
+kable(temp.frame)
+```
+
+\footnotesize
+Now let's compare how dimension reduction affects $R^2$ for ordinary least-squares compared to principal component regression.
+
+## Comparing $R^2$ for OLS and PCR
+
+```{r}
+data.V <- data.eig$vectors[,1:2]
+data.Z <- data.X %*% data.V
+data.model5.z <- lm(data.Y ~ data.Z)
+
+data.V <- data.eig$vectors[,1]
+data.Z <- data.X %*% data.V
+data.model6.z <- lm(data.Y ~ data.Z)
+
+data.ols2 <- lm(reviews_from_users ~ ., data=my_data[-c(6)])
+data.ols3 <- lm(reviews_from_users ~ ., data=my_data[-c(6, 3)])
+data.ols4 <- lm(reviews_from_users ~ ., data=my_data[-c(6, 3, 2)])
+data.ols5 <- lm(reviews_from_users ~ ., data=my_data[-c(6, 3, 2, 5)])
+data.ols6 <- lm(reviews_from_users ~ ., data=my_data[-c(6, 3, 2, 5, 7)])
+
+
+ols.rs <- c(
+  summary(data.ols6)$r.squared,
+  summary(data.ols5)$r.squared,
+  summary(data.ols4)$r.squared,
+  summary(data.ols3)$r.squared,
+  summary(data.ols2)$r.squared,
+  summary(data.ols1)$r.squared
+)
+
+pcr.rs <- c(
+  summary(data.model6.z)$r.squared,
+  summary(data.model5.z)$r.squared,
+  summary(data.model4.z)$r.squared,
+  summary(data.model3.z)$r.squared,
+  summary(data.model2.z)$r.squared,
+  summary(data.model1.z)$r.squared
+)
+
+plot(
+  pcr.rs,
+  type = "b",
+  pch = 16,
+  cex = 1,
+  col = "darkblue",
+  ylab = "R-squared",
+  xlab = "Number of predictors",
+  main = "R-squared for OLS vs PCR",
+  lwd = 1.5
+)
+points(
+  ols.rs,
+  type = "b",
+  pch = 16,
+  col = "darkorange",
+  lwd = 1.5
+)
+legend(
+  4.7,
+  .475,
+  legend = c("PCR", "OLS"),
+  col = c("darkblue", "darkorange"),
+  lty = 1,
+  cex = 1,
+  lwd = 2
+)
+```
+
+\small
+What may be surprising here is that using principal component regression is not helpful in this example! This is because our principal components are just calculated using our predictor variables, and so while our first principal component might maximize variance in our data, it does not necessarily maximize impact on our response variable.
+
+## Why Not PCR
+\small
+In our example, we assumed that `metascore` and `reviews_from_critics` faced potential collinearity. This turned out not to be the case, however.
+
+\scriptsize
+```{r, echo=TRUE}
+vif(data.ols1)
+```
+
+\small
+This indicates low levels of collinearity. We also only had only six predictor columns, and PCR is most effective when there are a large number of columns compared to rows. It can especially be employed when we have more columns than rows!
+
+# Example 2
 
 ## compare to MLR
 
