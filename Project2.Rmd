@@ -267,6 +267,53 @@ summary(pcr_model)
 ```
 
 
+## compare to MLR
 
+\small
+
+I will use a small example to show how PCR is better than MLR in some cases
+```{r}
+summary(mtcars)
+```
+\small
+split dataset into training set and test set
+```{r}
+smp_size <- floor(0.80 * nrow(mtcars))
+
+## set the seed 
+set.seed(123)
+train_ind <- sample(seq_len(nrow(mtcars)), size = smp_size)
+
+train_set <- mtcars[train_ind, ]
+test_set <- mtcars[-train_ind, ]
+
+```
+\small
+This time let's analyze how mpg can be affected by all the other factors.
+
+
+let's try multiple linear regression first 
+```{r}
+mlr<-lm(mpg~., data = train_set)
+summary(mlr)
+```
+ 
+```{r}
+mlr_pred<-predict(mlr,test_set)
+mean((mlr_pred-test_set$mpg)^2)
+```
+\small
+
+now let's try to do pcr for this dataset
+```{r}
+pcr<-pcr(mpg~., data = train_set, scale = TRUE, validation = "CV")
+summary(pcr)
+```
+```{r}
+pcr_pred<-predict(pcr, test_set, ncomp = 7)
+mean((pcr_pred-test_set$mpg)^2)
+```
+
+From the above we can see that our mse is less for PCR than for MLR
 
 
