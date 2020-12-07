@@ -14,6 +14,7 @@ knitr::opts_chunk$set(echo = FALSE,
                       message = FALSE, # Turn off load messages
                       warning = FALSE # Turn off warnings
                       )
+knitr::opts_knit$set(root.dir = 'data')
 library(scales)
 library(dplyr)
 library(ggplot2)
@@ -21,6 +22,7 @@ library(GGally)
 library(corrplot)
 library(MASS)
 library(clusterSim)
+library(pls)
 ```
 
 # Mathematical Theory
@@ -177,19 +179,16 @@ plot(
 )
 axis(side=1, at=c(1:n))
 axis(side=2, at=round(cumsum(D.perc))[c(1:6)], lwd.ticks=.5)
+getwd()
 ```
 
 # Examples
 
-
-
-
-
-
-
+## IMDb Data
 I will show you how PCR works by using dataset about IMDb movies
 ```{r}
-data<-read.csv("D:/VT Files/IMDb movies.csv")
+
+data <- read.csv("IMDb movies.csv")
 head(data)
 ```
 
@@ -212,7 +211,6 @@ We will consider metascore as dependent variable
 
 normalized data before we get to PCR 
 ```{r}
-library(clusterSim)
 my_data<-data.Normalization(my_data, type="n1", normalization = "column")
 ```
 
@@ -262,10 +260,11 @@ dim(train)
 ```
 
 ```{r}
-library(pls)
 pcr_model<-pcr(metascore~., data = train, scale = TRUE, validation = "CV")
 summary(pcr_model)
 ```
+
+
 
 
 
