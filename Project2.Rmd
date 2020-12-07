@@ -179,19 +179,21 @@ plot(
 )
 axis(side=1, at=c(1:n))
 axis(side=2, at=round(cumsum(D.perc))[c(1:6)], lwd.ticks=.5)
-getwd()
 ```
 
 # Examples
 
 ## IMDb Data
-I will show you how PCR works by using dataset about IMDb movies
+\small
+Let's now use principal component analysis 
 ```{r}
-
 data <- read.csv("IMDb movies.csv")
 head(data)
 ```
 
+
+## Next slide
+\small
 Extract columns of movie duration, average vote, metascore for each movie, reviews from users and reviews from critics and combine them to a new dataframe
 
 ```{r pressure}
