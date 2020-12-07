@@ -162,7 +162,7 @@ plot(
 axis(side=1, at=c(1:n))
 ```
 
-The first eigenvector captures nearly 33\% of variance, while the tenth eigenvector contributes nearly nothing, implying that it is nearly a linear combination of other vectors. There is a steep drop-off after our sixth eigenvalue, so six eigenvectors might be a good choice for our regression.
+The first eigenvector captures about 33\% of variance, while the tenth eigenvector contributes almost nothing, implying that it is nearly a linear combination of other vectors. There is a steep drop-off after our sixth eigenvalue, so six eigenvectors might be a good choice for our regression.
 
 ## Dimension Reduction
 \footnotesize
@@ -222,8 +222,6 @@ And now we normalize our data columns using the two-norm and center it so that $
 ```{r, echo=TRUE}
 my_data <- my_data %>%
   data.Normalization(type = "n12", normalization = "column")
-sapply(my_data, norm, "2")
-sapply(my_data, mean) %>% round(5)
 ```
 
 \small
