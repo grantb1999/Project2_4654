@@ -1,7 +1,7 @@
 ---
 title: "Principal Component Regression"
-author: "Grant Bailey, Lizhou Wang, Andrew Li"
-date: "12/3/2020"
+author: "Grant Bailey, Lizhou Wang"
+date: "12/8/2020"
 output: beamer_presentation
 ---
 
@@ -98,7 +98,7 @@ segments(d[1,1], d[1,2], d[2,1], d[2,2], col="red", lwd=3)
 
 ## Principal Components
 \small
-Principal components are directions that maximize variance in a matrix. They can also be seen as "axes" for the matrix, which is apparent in the previous plot. Principal components are, then, the same as eigenvectors. Here are the eigenvectors of our matrix $B$ scaled and drawn on our plot.
+Principal components are directions that maximize variance in a matrix. They can also be seen as "axes" for the matrix, which can be seen in our plot. Principal components are, then, the same as eigenvectors. Here are the eigenvectors of our matrix $B$ scaled and drawn on our plot.
 
 \tiny
 
@@ -121,7 +121,7 @@ Here are the steps to use our principal components for regression:
 1. Normalize both our $X$ and our $y$
 2. Obtain singular values and eigenvectors for $X$, where $D$ denotes a diagonal matrix with eigenvalues ordered from greatest to least, and $V$ denotes a matrix with eigenvectors for columns.
 3. Reduce the number of columns in $V$ based on the eigenvalues.
-4. Let $n$ be the total number of columns, $p$ be the initial number of eigenvalues, and $r$ be the chosen number of eigenvectors to retain. Calculate $Z_{n \times r} = X_{n \times p}V_{p \times r}$
+4. Let $n$ be the total number of entries (rows), $p$ be the initial number of eigenvalues, and $r$ be the chosen number of eigenvectors to retain. Calculate $Z_{n \times r} = X_{n \times p}V_{p \times r}$
 5. Calculate $\beta_Z = (Z^\intercal Z)^{-1} Z^\intercal y$
 6. Calculate $\hat{y} = Z \beta_{Z} = X \beta_{X}$, where $\beta_X=V\beta_Z$
 
@@ -162,7 +162,7 @@ plot(
 axis(side=1, at=c(1:n))
 ```
 
-The first eigenvector captures about 33\% of variance, while the tenth eigenvector contributes almost nothing, implying that it is nearly a linear combination of other vectors. There is a steep drop-off after our sixth eigenvalue, so six eigenvectors might be a good choice for our regression.
+The first eigenvector captures about 33\% of variance, while the tenth eigenvector contributes almost nothing. There is a steep drop-off after our sixth eigenvalue, so six eigenvectors might be a good choice for our regression.
 
 ## Dimension Reduction
 \footnotesize
@@ -187,7 +187,7 @@ axis(side=2, at=round(cumsum(D.perc))[c(1:6)], lwd.ticks=.5)
 
 ## IMDb Data
 \small
-Let's now use principal component analysis to forecast IMDB user reviews for movies.
+Let's now use principal component regression to forecast IMDB user reviews for movies.
 
 \scriptsize
 ```{r, echo=TRUE}
@@ -318,26 +318,6 @@ summary(data.model3.z)
 \footnotesize
 With just four principal components, we get $R^2=0.5882$, compared to $R^2=0.5889$ for five principal components and $R^2=0.5946$ for all six.
 
-
-## Too Few Principal Components
-\footnotesize
-Now, let's create a model using three principal components, accounting for $83\%$ of the variance in our data. We set our $V$ to just the first three eigenvectors, then repeat the above steps.
-
-\tiny
-```{r, echo=T}
-data.V <- data.eig$vectors[,1:3]
-```
-
-```{r}
-data.Z <- data.X %*% data.V
-data.model4.z <- lm(data.Y ~ data.Z)
-summary(data.model4.z)
-```
-
-\footnotesize
-With three principal components, we get $R^2=0.5423$.
-
-
 ## Compare to Ordinary Least-Squares Regression
 \footnotesize
 Let's compare our models to an ordinary least-squares regression model.
@@ -368,6 +348,10 @@ Now let's compare how dimension reduction affects $R^2$ for ordinary least-squar
 ## Comparing $R^2$ for OLS and PCR
 
 ```{r}
+data.V <- data.eig$vectors[,1:3]
+data.Z <- data.X %*% data.V
+data.model4.z <- lm(data.Y ~ data.Z)
+
 data.V <- data.eig$vectors[,1:2]
 data.Z <- data.X %*% data.V
 data.model5.z <- lm(data.Y ~ data.Z)
@@ -447,7 +431,7 @@ This indicates low levels of collinearity. We also only had only six predictor c
 
 # Example 2
 
-## compare to MLR
+## Compare to MLR
 
 \small
 
