@@ -436,12 +436,16 @@ This indicates low levels of collinearity. We also only had only six predictor c
 \small
 
 I will use a small example to show how PCR is better than MLR in some cases
+
+\scriptsize
 ```{r}
 summary(mtcars)
 ```
----
+
+## Compare to MLR
 \small
 split dataset into training set and test set
+\scriptsize
 ```{r}
 smp_size <- floor(0.80 * nrow(mtcars))
 
@@ -453,25 +457,28 @@ train_set <- mtcars[train_ind, ]
 test_set <- mtcars[-train_ind, ]
 
 ```
----
+
+## Compare to MLR
 \small
 This time let's analyze how mpg can be affected by all the other factors.
 
 
 let's try multiple linear regression first 
----
+\tiny
 ```{r}
 mlr<-lm(mpg~., data = train_set)
 summary(mlr)
 ```
----
 ```{r}
 mlr_pred<-predict(mlr,test_set)
 mean((mlr_pred-test_set$mpg)^2)
 ```
+
+## Compare to MLR
 \small
 
 now let's try to do pcr for this dataset
+\scriptsize
 ```{r}
 pcr<-pcr(mpg~., data = train_set, scale = TRUE, validation = "CV")
 summary(pcr)
@@ -483,22 +490,22 @@ mean((pcr_pred-test_set$mpg)^2)
 
 From the above we can see that our mse is less for PCR than for MLR
 
-# compare to MLR
+## Compare to MLR
 
 \small
 
 I will use a small example to show how PCR is better than MLR in some cases
 
----
 \tiny
 ```{r,echo=TRUE}
 summary(mtcars)
 ```
 
----
+## Compare to MLR
 \small
 split dataset into training set and test set
 
+\scriptsize
 ```{r,echo=TRUE}
 smp_size <- floor(0.80 * nrow(mtcars))
 
@@ -511,28 +518,27 @@ test_set <- mtcars[-train_ind, ]
 
 ```
 
----
+## Compare to MLR
 \small
 This time let's analyze how mpg can be affected by all the other factors.
 
-
 let's try multiple linear regression first 
----
+\scriptsize
 ```{r,echo=TRUE}
 mlr<-lm(mpg~., data = train_set)
 summary(mlr)
 ```
 
 
---- 
+## Compare to MLR
 ```{r,echo=TRUE}
 mlr_pred<-predict(mlr,test_set)
 mean((mlr_pred-test_set$mpg)^2)
 ```
 
----
+## Compare to MLR
 now let's try to do pcr for this dataset
-
+\tiny
 ```{r,echo=TRUE}
 library(pls)
 pcr<-pcr(mpg~., data = train_set, scale = TRUE, validation = "CV")
@@ -542,3 +548,11 @@ summary(pcr)
 pcr_pred<-predict(pcr, test_set, ncomp = 7)
 mean((pcr_pred-test_set$mpg)^2)
 ```
+
+
+## Sources
+\footnotesize
+* https://rpubs.com/esobolewska/pcr-step-by-step
+* https://en.wikipedia.org/wiki/Principal_component_regression
+* https://blogs.sas.com/content/iml/2017/10/25/principal-component-regression-drawbacks.html
+
